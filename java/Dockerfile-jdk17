@@ -1,0 +1,41 @@
+FROM ubuntu:24.04
+
+# 基础环境配置
+ENV LANG="en_US.UTF-8" \
+    LC_ALL="C.UTF-8" \
+    TZ="Asia/Shanghai" \
+    APT_MIRROR="http://mirrors.aliyun.com"
+
+# 安装中文字体 查看 fc-list | grep -i simsun
+COPY ./fonts/simsun.ttc /usr/share/fonts/
+
+# 配置阿里云镜像源、时区
+RUN sed -i "s@http://archive.ubuntu.com@${APT_MIRROR}@g" /etc/apt/sources.list.d/ubuntu.sources \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
+    && mkdir -p /app
+
+# 安装基础工具（合并 RUN 减少层数）
+RUN apt-get update --fix-missing -o Acquire::http::No-Cache=True \
+    && apt-get install -y --no-install-recommends curl wget iproute2 fontconfig tzdata \
+    && fc-cache -f -v \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 JDK 17
+# COPY openjdk-17.0.2_linux-x64_bin.tar.gz /tmp/
+
+WORKDIR /tmp
+RUN curl -O https://mirrors.huaweicloud.com/openjdk/17.0.2/openjdk-17.0.2_linux-x64_bin.tar.gz \ 
+    && tar -xf openjdk-17.0.2_linux-x64_bin.tar.gz -C /usr/local/ \
+    && rm -rf openjdk-17.0.2_linux-x64_bin.tar.gz \
+    && ln -sf /usr/local/jdk-17.0.2 /usr/local/jdk
+
+# 环境变量配置
+ENV JAVA_HOME=/usr/local/jdk
+ENV PATH=$JAVA_HOME/bin:$PATH \
+    JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=75.0 -XX:MinRAMPercentage=75.0"
+
+# 工作目录和启动命令
+WORKDIR /app
+#CMD ["java", "-jar", "spring.jar"]

@@ -1,0 +1,36 @@
+FROM centos:centos7.9.2009
+LABEL emill="shaopenghk@qq.com"
+ENV LC_ALL="en_US.UTF-8"
+ENV TZ="Asia/Shanghai"
+
+COPY ./fonts/simsun.ttc /usr/share/fonts/simsun.ttc
+
+RUN rm -f /etc/localtime \
+    && ln -sv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && curl -o /etc/yum.repos.d/CentOS-Base.repo https://mirrors.aliyun.com/repo/Centos-7.repo \
+    && curl -o /etc/yum.repos.d/epel-7.repo https://mirrors.aliyun.com/repo/epel-7.repo \
+    && sed -i -e '/mirrors.cloud.aliyuncs.com/d' -e '/mirrors.aliyuncs.com/d' /etc/yum.repos.d/CentOS-Base.repo \
+    && yum clean all \
+    && yum makecache \
+    && yum  update -y \
+    && yum -y install kde-l10n-Chinese iproute fontconfig \
+    && yum -y reinstall glibc-common  \
+    && yum -y install ttf-dejavu fontconfig \
+    && localedef -c -f UTF-8 -i zh_CN zh_CN.utf8 \
+    && fc-list \
+    && mkdir -p /app
+
+WORKDIR /tmp
+RUN curl -O https://repo.huaweicloud.com/java/jdk/8u202-b08/jdk-8u202-linux-x64.tar.gz \
+    && tar -xf jdk-8u202-linux-x64.tar.gz -C /usr/local \
+    && rm -rf jdk-8u202-linux-x64.tar.gz
+
+ENV JAVA_HOME=/usr/local/jdk1.8.0_202
+ENV CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar \
+    PATH=$JAVA_HOME/bin:$PATH
+
+WORKDIR /app
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=75.0 -XX:MinRAMPercentage=75.0"
+
+WORKDIR /app
+#CMD ["java", "-jar", "spring.jar"]

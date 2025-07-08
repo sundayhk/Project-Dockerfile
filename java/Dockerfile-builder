@@ -1,0 +1,14 @@
+# 第一阶段：构建 JAR
+FROM maven:3.8-openjdk-17 AS builder
+COPY . /src
+WORKDIR /src
+RUN mvn clean package -DskipTests
+
+# 第二阶段：运行环境
+FROM myjdk17
+
+# 从 builder 阶段复制 JAR
+COPY --from=builder /src/target/spring.jar /app/
+WORKDIR /app
+#  JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=75.0 -XX:MinRAMPercentage=75.0"
+CMD ["java", "-jar", "spring.jar"]

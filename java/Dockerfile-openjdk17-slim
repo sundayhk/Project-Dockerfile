@@ -1,0 +1,12 @@
+FROM openjdk:17.0.2-slim
+ENV TZ=Asia/Shanghai
+
+COPY fonts/simsun.ttc /usr/share/fonts/
+RUN sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list \
+    && apt-get update -y \
+    && apt-get install xfonts-utils fontconfig -y \
+    && fc-cache -f -v \
+    && mkdir -p /app
+    
+ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=75.0 -XX:MinRAMPercentage=75.0"
+WORKDIR /app

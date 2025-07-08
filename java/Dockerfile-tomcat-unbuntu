@@ -1,0 +1,42 @@
+FROM ubuntu:24.04
+
+ENV LANG="en_US.UTF-8" \
+    TZ="Asia/Shanghai" \
+    TOMCAT_VERSION=apache-tomcat-8.5.100 \
+    APT_MIRROR="http://mirrors.aliyun.com"
+
+COPY ./fonts/simsun.ttc /usr/share/fonts/simsun.ttc
+
+RUN sed -i "s@http://archive.ubuntu.com@${APT_MIRROR}@g" /etc/apt/sources.list.d/ubuntu.sources \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
+    && mkdir -p /app
+
+RUN apt-get update --fix-missing -o Acquire::http::No-Cache=True \
+    && apt install -y  wget curl iproute2 fontconfig tzdata \
+    && fc-cache -f -v \
+    && fc-list \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# https://repo.huaweicloud.com/java/jdk/8u202-b08/jdk-8u202-linux-x64.tar.gz
+# COPY jdk-8u202-linux-x64.tar.gz /tmp/
+WORKDIR /tmp
+RUN curl -O https://repo.huaweicloud.com/java/jdk/8u202-b08/jdk-8u202-linux-x64.tar.gz \
+  && tar -xf jdk-8u202-linux-x64.tar.gz -C /usr/local/ \
+  && rm -rf jdk-8u202-linux-x64.tar.gz
+
+ENV JAVA_HOME=/usr/local/jdk1.8.0_202
+ENV CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar \
+    PATH=$JAVA_HOME/bin:$PATH \
+    CATALINA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=75.0 -XX:MinRAMPercentage=75.0"
+
+WORKDIR /tmp
+RUN curl -O https://mirrors.huaweicloud.com/apache/tomcat/tomcat-8/v8.5.100/bin/${TOMCAT_VERSION}.tar.gz \
+  && tar -xf ${TOMCAT_VERSION}.tar.gz -C /usr/local \
+  && ln -sf /usr/local/${TOMCAT_VERSION} /usr/local/tomcat \
+  && rm -rf ${TOMCAT_VERSION}.tar.gz \
+  && rm -rf /usr/local/tomcat/webapps/*
+
+WORKDIR /usr/local/tomcat/webapps
+CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]
