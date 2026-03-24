@@ -1,3 +1,4 @@
+```
 java -server -jar \
   -Xms2g \
   -Xmx2g \
@@ -16,3 +17,4 @@ java -server -jar \
   -XX:NumberOfGCLogFiles=10 \
   -XX:GCLogFileSize=100M \
   /data/jar/java-pay-api/pay-api.jar
+```
